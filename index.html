@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcial POO_Carlos Sarabia</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 
+CARLOS DANIEL SARABIA SARMIENTO 1127578034
+HAROLD GEREDA 
+WBER ARBEY VALLEJO TANGARIFE 98626794
+-->    
+
+<div class="container">
+    <header>
+        <h1>Gestión de Biblioteca Unisalamanca Pro Max</h1>
+        <p><strong>Estudiantes:</strong> Carlos Sarabia, Harold Gereda, Wber Vallejo</p>
+    </header>
+
+    <div class="grid-layout">
+        <aside class="sidebar">
+            <div class="card">
+                <h3>Registar Libro</h3>
+                <input type="text" id="l-cod" placeholder="Código">
+                <input type="text" id="l-tit" placeholder="Título">
+                <input type="number" id="l-anio" placeholder="Año">
+                <input type="text" id="l-gen" placeholder="Género">
+                <input type="text" id="l-aut" placeholder="Autor">
+                <button onclick="uiAgregarLibro()">Añadir Libro</button>
+            </div>
+
+            <div class="card">
+                <h3>Registar Socio</h3>
+                <input type="text" id="s-ced" placeholder="Cédula">
+                <input type="text" id="s-nom" placeholder="Nombre completo">
+                <button onclick="uiAgregarSocio()">Registrar Socio</button>
+            </div>
+
+            <div class="card card-danger">
+                <h3>Eliminar Registros</h3>
+                <input type="text" id="del-id" placeholder="Código Libro o Cédula">
+                <div class="button-group-vertical">
+                    <button class="btn-danger" onclick="uiEliminarLibro()">Eliminar Libro</button>
+                    <button class="btn-danger" onclick="uiEliminarSocio()">Eliminar Socio</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="actions">
+                <button class="btn-sec" onclick="biblioteca.mostrarCatalogo()">Ver Catálogo</button>
+                <button class="btn-sec" onclick="biblioteca.mostrarSocios()">Ver Socios</button>
+                <button class="btn-sec" onclick="uiPrestar()">Realizar Préstamo</button>
+                <button class="btn-sec" onclick="uiDevolver()">Procesar Devolución</button>
+                <button class="btn-test" onclick="inicializarSistema()">Cargar Default</button>
+            </div>
+            
+            <div id="consola" class="terminal">
+                Sistema listo. Ingrese datos o use "Cargar Default".
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
