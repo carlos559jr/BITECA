@@ -25,10 +25,9 @@ class BibliotecaCarlos {
             .select('codigo');
 
         if (error || !data || data.length === 0) {
-            return 'L001'; // Si está vacía, empieza por L001
+            return 'L001';
         }
 
-        // Extraer los números de los códigos existentes (ej. 'L004' -> 4)
         let numeros = data.map(item => {
             let num = parseInt(item.codigo.replace(/\D/g, ''));
             return isNaN(num) ? 0 : num;
@@ -37,13 +36,11 @@ class BibliotecaCarlos {
         let maxNum = Math.max(...numeros);
         let siguienteNum = maxNum + 1;
 
-        // Formatear con ceros a la izquierda (Ej: L005, L012)
         return 'L' + String(siguienteNum).padStart(3, '0');
     }
 
-    // --- CATÁLOGO (LIBROS) ---
+    // --- CATÁLOGO (LIBROS) CON DETALLE DE QUIÉN LO TIENE ---
     async agregarLibroBD(titulo, anio, genero, autor) {
-        // Generar el código de forma automática en el momento de guardar
         const codigo = await this.obtenerSiguienteCodigoLibro();
 
         const { data, error } = await supabaseClient
@@ -55,15 +52,22 @@ class BibliotecaCarlos {
             return "Error al registrar libro: " + error.message;
         }
 
-        // Actualizar el input visualmente para el siguiente libro
         prepararNuevoCodigo();
         return `Libro "${titulo}" guardado con éxito. Código asignado: [${codigo}]`;
     }
 
     async mostrarCatalogo() {
+        // Consultamos los libros y también traemos información del préstamo activo y el socio correspondiente
         const { data: libros, error } = await supabaseClient
             .from('libros')
-            .select('*');
+            .select(`
+                *,
+                prestamos (
+                    dias_plazo,
+                    fecha_prestamo,
+                    socios ( cedula, nombre )
+                )
+            `);
 
         if (error) {
             this.render("Error al cargar catálogo: " + error.message);
@@ -75,14 +79,24 @@ class BibliotecaCarlos {
             res += "No hay libros registrados.";
         } else {
             libros.forEach(m => {
-                const estado = m.disponible ? '🟢 DISPONIBLE' : '🔴 PRESTADO';
-                res += `[${m.codigo}] ${m.titulo} (${m.anio}) - ${m.genero} | Autor: ${m.autor} - ${estado}\n`;
+                let estadoTexto = '🟢 DISPONIBLE';
+                
+                if (!m.disponible) {
+                    // Buscar si hay un préstamo activo vinculado
+                    let prestamoActivo = m.prestamos && m.prestamos.length > 0 ? m.prestamos[0] : null;
+                    let nombreSocio = prestamoActivo && prestamoActivo.socios ? prestamoActivo.socios.nombre : "Desconocido";
+                    let cedulaSocio = prestamoActivo && prestamoActivo.socios ? prestamoActivo.socios.cedula : "";
+                    
+                    estadoTexto = `🔴 PRESTADO a: ${nombreSocio} (CC: ${cedulaSocio})`;
+                }
+
+                res += `[${m.codigo}] ${m.titulo} (${m.anio}) - ${m.genero} | Autor: ${m.autor}\n   Estado: ${estadoTexto}\n\n`;
             });
         }
         this.render(res);
     }
 
-    // --- SOCIOS ---
+    // --- SOCIOS CON DETALLE DE QUÉ LIBRO TIENEN ---
     async agregarSocioBD(cedula, nombre) {
         const { data, error } = await supabaseClient
             .from('socios')
@@ -96,21 +110,41 @@ class BibliotecaCarlos {
     }
 
     async mostrarSocios() {
+        // Consultamos los socios y traemos sus préstamos activos junto con los datos del libro
         const { data: socios, error } = await supabaseClient
             .from('socios')
-            .select('*');
+            .select(`
+                *,
+                prestamos (
+                    dias_plazo,
+                    fecha_prestamo,
+                    libros ( codigo, titulo )
+                )
+            `);
 
         if (error) {
             this.render("Error al cargar socios: " + error.message);
             return;
         }
 
-        let res = `--- SOCIOS Y DEUDAS ---\n`;
+        let res = `--- SOCIOS Y LIBROS EN SU PODER ---\n`;
         if (socios.length === 0) {
             res += "No hay socios registrados.";
         } else {
             socios.forEach(s => {
-                res += `SOCIO: ${s.nombre} | CC: ${s.cedula} | Multa: $${Number(s.multa_acumulada).toFixed(2)}\n`;
+                res += `SOCIO: ${s.nombre} | CC: ${s.cedula} | Multa Adeudada: $${Number(s.multa_acumulada).toFixed(2)}\n`;
+                
+                if (s.prestamos && s.prestamos.length > 0) {
+                    res += `  📚 Libros en préstamo:\n`;
+                    s.prestamos.forEach(p => {
+                        let tituloLibro = p.libros ? p.libros.titulo : "Desconocido";
+                        let codLibro = p.libros ? p.libros.codigo : "";
+                        res += `    - [${codLibro}] ${tituloLibro} (Plazo: ${p.dias_plazo} días)\n`;
+                    });
+                } else {
+                    res += `  📚 Sin libros prestados actualmente.\n`;
+                }
+                res += `--------------------------------------------------\n`;
             });
         }
         this.render(res);
@@ -162,17 +196,54 @@ class BibliotecaCarlos {
         const multaCalculada = diasRetraso > 0 ? diasRetraso * 0.80 : 0;
         const nuevaMulta = Number(socio.multa_acumulada) + multaCalculada;
 
+        // Actualizar multa del socio
         await supabaseClient
             .from('socios')
             .update({ multa_acumulada: nuevaMulta })
             .eq('cedula', cedSocio);
 
+        // Marcar libro como disponible de nuevo
         await supabaseClient
             .from('libros')
             .update({ disponible: true })
             .eq('codigo', codMaterial);
 
+        // Eliminar el registro de préstamo activo de la tabla prestamos
+        await supabaseClient
+            .from('prestamos')
+            .delete()
+            .match({ codigo_libro: codMaterial, cedula_socio: cedSocio });
+
         return `Devolución exitosa. Multa generada: $${multaCalculada.toFixed(2)}. Total deuda: $${nuevaMulta.toFixed(2)}`;
+    }
+
+    // --- PAGAR MULTA ---
+    async pagarMulta(cedSocio, montoPago) {
+        const { data: socio, error: errSocio } = await supabaseClient
+            .from('socios')
+            .select('*')
+            .eq('cedula', cedSocio)
+            .single();
+
+        if (errSocio || !socio) return "Error: Socio no encontrado.";
+
+        let multaActual = Number(socio.multa_acumulada);
+        if (multaActual <= 0) return `El socio ${socio.nombre} no tiene deudas pendientes.`;
+
+        if (montoPago > multaActual) {
+            return `Error: El monto a pagar ($${montoPago.toFixed(2)}) supera la deuda actual ($${multaActual.toFixed(2)}).`;
+        }
+
+        let nuevaMulta = multaActual - montoPago;
+
+        const { error: errUpdate } = await supabaseClient
+            .from('socios')
+            .update({ multa_acumulada: nuevaMulta })
+            .eq('cedula', cedSocio);
+
+        if (errUpdate) return "Error al procesar el pago: " + errUpdate.message;
+
+        return `Pago exitoso de $${montoPago.toFixed(2)}. Deuda restante de ${socio.nombre}: $${nuevaMulta.toFixed(2)}`;
     }
 
     // --- ELIMINAR REGISTROS ---
@@ -196,7 +267,6 @@ const biblioteca = new BibliotecaCarlos("Biblioteca Unisalamanca");
 // FUNCIONES DE LA INTERFAZ (UI) Y AUTOMATIZACIÓN
 // ==========================================
 
-// Función auxiliar para rellenar automáticamente el input de código de libro
 async function prepararNuevoCodigo() {
     const inputCod = document.getElementById('l-cod');
     if (inputCod) {
@@ -206,7 +276,6 @@ async function prepararNuevoCodigo() {
     }
 }
 
-// Cargar catálogo automáticamente al abrir la página y preparar el código
 window.onload = async () => {
     biblioteca.render("Conectado a Supabase. Cargando datos...");
     await prepararNuevoCodigo();
@@ -226,7 +295,7 @@ async function uiAgregarLibro() {
 
     const msj = await biblioteca.agregarLibroBD(tit, anio, gen, aut);
     biblioteca.render(msj);
-    await biblioteca.mostrarCatalogo(); // Refrescar catálogo automáticamente
+    await biblioteca.mostrarCatalogo();
 }
 
 async function uiAgregarSocio() {
@@ -262,6 +331,20 @@ async function uiDevolver() {
     const msj = await biblioteca.procesarDevolucion(cod, ced, retraso);
     biblioteca.render(msj);
     await biblioteca.mostrarCatalogo();
+}
+
+async function uiPagarMulta() {
+    const ced = prompt("Ingrese Cédula del Socio que va a pagar:");
+    const monto = parseFloat(prompt("Ingrese el monto a pagar ($):"));
+
+    if (!ced || isNaN(monto) || monto <= 0) {
+        alert("Por favor ingrese datos válidos.");
+        return;
+    }
+
+    const msj = await biblioteca.pagarMulta(ced, monto);
+    biblioteca.render(msj);
+    await biblioteca.mostrarSocios(); // Refrescar vista de socios automáticamente
 }
 
 async function uiEliminarLibro() {
