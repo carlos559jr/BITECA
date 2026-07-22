@@ -18,14 +18,15 @@
     <div class="grid-layout">
         <aside class="sidebar">
             <details class="card" open>
-                <summary><h3>Registrar Libro</h3></summary>
-                <input type="text" id="l-cod" placeholder="Código">
-                <input type="text" id="l-tit" placeholder="Título">
-                <input type="number" id="l-anio" placeholder="Año">
-                <input type="text" id="l-gen" placeholder="Género">
-                <input type="text" id="l-aut" placeholder="Autor">
-                <button onclick="uiAgregarLibro()">Añadir Libro</button>
-            </details>
+           <details class="card" open>
+            <summary><h3>Registrar Libro</h3></summary>
+            <input type="text" id="l-cod" placeholder="Código automático" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+            <input type="text" id="l-tit" placeholder="Título">
+            <input type="number" id="l-anio" placeholder="Año">
+            <input type="text" id="l-gen" placeholder="Género">
+            <input type="text" id="l-aut" placeholder="Autor">
+            <button onclick="uiAgregarLibro()">Añadir Libro</button>
+        </details>
 
             <details class="card">
                 <summary><h3>Registrar Socio</h3></summary>
