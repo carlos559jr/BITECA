@@ -3,50 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parcial POO_Carlos Sarabia</title>
+    <title>Biteca v1.0 - Supabase</title>
     <link rel="stylesheet" href="style.css">
+    <!-- 1. Cargar el SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- 
-CARLOS DANIEL SARABIA SARMIENTO 1127578034
-HAROLD GEREDA 
-WBER ARBEY VALLEJO TANGARIFE 98626794
--->    
-
 <div class="container">
     <header>
-        <h1>Gestión de Biblioteca Unisalamanca Pro Max</h1>
-        <p><strong>Estudiantes:</strong> Carlos Sarabia, Harold Gereda, Wber Vallejo</p>
+        <h1>BITECA v1.0</h1>
     </header>
 
     <div class="grid-layout">
         <aside class="sidebar">
-            <div class="card">
-                <h3>Registar Libro</h3>
+            <details class="card" open>
+                <summary><h3>Registrar Libro</h3></summary>
                 <input type="text" id="l-cod" placeholder="Código">
                 <input type="text" id="l-tit" placeholder="Título">
                 <input type="number" id="l-anio" placeholder="Año">
                 <input type="text" id="l-gen" placeholder="Género">
                 <input type="text" id="l-aut" placeholder="Autor">
                 <button onclick="uiAgregarLibro()">Añadir Libro</button>
-            </div>
+            </details>
 
-            <div class="card">
-                <h3>Registar Socio</h3>
+            <details class="card">
+                <summary><h3>Registrar Socio</h3></summary>
                 <input type="text" id="s-ced" placeholder="Cédula">
                 <input type="text" id="s-nom" placeholder="Nombre completo">
                 <button onclick="uiAgregarSocio()">Registrar Socio</button>
-            </div>
+            </details>
 
-            <div class="card card-danger">
-                <h3>Eliminar Registros</h3>
+            <details class="card card-danger">
+                <summary><h3>Eliminar Registros</h3></summary>
                 <input type="text" id="del-id" placeholder="Código Libro o Cédula">
                 <div class="button-group-vertical">
                     <button class="btn-danger" onclick="uiEliminarLibro()">Eliminar Libro</button>
                     <button class="btn-danger" onclick="uiEliminarSocio()">Eliminar Socio</button>
                 </div>
-            </div>
+            </details>
         </aside>
 
         <main class="content">
@@ -55,11 +50,10 @@ WBER ARBEY VALLEJO TANGARIFE 98626794
                 <button class="btn-sec" onclick="biblioteca.mostrarSocios()">Ver Socios</button>
                 <button class="btn-sec" onclick="uiPrestar()">Realizar Préstamo</button>
                 <button class="btn-sec" onclick="uiDevolver()">Procesar Devolución</button>
-                <button class="btn-test" onclick="inicializarSistema()">Cargar Default</button>
             </div>
             
             <div id="consola" class="terminal">
-                Sistema listo. Ingrese datos o use "Cargar Default".
+                Conectado a base de datos. Sistema listo...
             </div>
         </main>
     </div>
